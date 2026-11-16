@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>贪吃蛇 · Snake Game</title>
+<style>
+  /* ---------- Reset & Base ---------- */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-1: #f8fafc;
+    --bg-2: #f1f5f9;
+    --card: #ffffff;
+    --card-2: #0f172a;
+    --ring: #e2e8f0;
+    --border: #e2e8f0;
+    --muted: #64748b;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+    --slate-950: #020617;
+    --emerald-400: #34d399;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --teal-500: #14b8a6;
+    --rose-400: #fb7185;
+    --rose-500: #f43f5e;
+    --rose-600: #e11d48;
+    --amber-400: #fbbf24;
+    --shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(to bottom, var(--bg-1), var(--bg-2));
+    color: var(--slate-900);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-1: #020617;
+      --bg-2: #0f172a;
+      --card: #0f172a;
+      --ring: #1e293b;
+      --border: #1e293b;
+      --slate-50: #1e293b;
+      --slate-100: #1e293b;
+      --slate-200: #334155;
+      --slate-300: #475569;
+      --slate-700: #cbd5e1;
+      --slate-800: #1e293b;
+      --slate-900: #f1f5f9;
+    }
+    body { color: #f1f5f9; }
+  }
+
+  /* ---------- Layout ---------- */
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .main {
+    flex: 1;
+    width: 100%;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  @media (min-width: 640px) { .main { padding: 2.5rem 1rem; } }
+
+  /* ---------- Header ---------- */
+  .header { text-align: center; margin-bottom: 1.5rem; }
+  .header-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .logo-badge {
+    width: 2.5rem; height: 2.5rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.75rem;
+    background: var(--emerald-500);
+    color: #fff;
+    box-shadow: 0 10px 15px -3px rgba(16,185,129,.4);
+  }
+  .title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    background: linear-gradient(to right, var(--emerald-600), var(--teal-500));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  @media (min-width: 640px) { .title { font-size: 2.25rem; } }
+  .subtitle { font-size: 0.875rem; color: var(--muted); }
+
+  /* ---------- Game layout ---------- */
+  .game-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  @media (min-width: 1024px) { .game-wrap { flex-direction: row; } }
+
+  .board-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  @media (min-width: 1024px) { .board-col { width: auto; } }
+
+  .board-relative { position: relative; }
+
+  /* ---------- Score chips ---------- */
+  .score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    background: var(--card);
+    padding: 0.5rem 0.75rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    border: 1px solid var(--ring);
+    flex: 1;
+    min-width: 0;
+  }
+  .chip-icon {
+    width: 1.5rem; height: 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.375rem;
+    background: var(--slate-50);
+    flex-shrink: 0;
+  }
+  .chip-body { min-width: 0; }
+  .chip-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .chip-value {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ---------- Canvas wrapper ---------- */
+  .canvas-wrapper {
+    position: relative;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--ring);
+  }
+  canvas {
+    border-radius: 0.75rem;
+    display: block;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+  }
+
+  /* ---------- Overlay ---------- */
+  .overlay {
+    position: absolute;
+    inset: 0.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2,6,23,0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+  .overlay-inner { text-align: center; padding: 1rem; }
+  .overlay-title { color: #fb7185; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .overlay-sub { color: #cbd5e1; font-size: 0.875rem; margin-bottom: 0.25rem; }
+  .overlay-score { color: var(--emerald-400); font-size: 2.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .overlay-ready { color: #cbd5e1; font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .overlay-hint { color: #94a3b8; font-size: 0.875rem; margin-bottom: 1.25rem; }
+
+  /* ---------- New record badge ---------- */
+  .record-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--amber-400);
+    color: #422006;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0.5rem 0 1rem;
+  }
+
+  /* ---------- Buttons ---------- */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color .15s ease, transform .1s ease, box-shadow .15s ease;
+    user-select: none;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: var(--emerald-500);
+    color: #fff;
+    box-shadow: 0 10px 15px -3px rgba(16,185,129,.4);
+  }
+  .btn-primary:hover { background: var(--emerald-600); }
+  .btn-secondary {
+    background: var(--slate-100);
+    color: var(--slate-900);
+    border-color: var(--slate-200);
+  }
+  .btn-secondary:hover { background: var(--slate-200); }
+  .btn-outline {
+    background: transparent;
+    color: var(--slate-900);
+    border-color: var(--slate-300);
+  }
+  .btn-outline:hover { background: var(--slate-50); }
+  .btn-lg { height: 3rem; padding: 0 1.5rem; font-size: 1rem; }
+  .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+
+  /* ---------- Side panel ---------- */
+  .side-panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  @media (min-width: 1024px) { .side-panel { width: 18rem; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--ring);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+  }
+  .card-body { padding: 1.25rem; }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .info-dot {
+    width: 1.5rem; height: 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.375rem;
+    background: #d1fae5;
+    color: var(--emerald-600);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  @media (prefers-color-scheme: dark) {
+    .info-dot { background: #064e3b; color: #34d399; }
+  }
+
+  .instructions { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .instructions li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  kbd {
+    display: inline-flex;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    border: 1px solid var(--slate-300);
+    background: var(--slate-50);
+    padding: 0 0.375rem;
+    font-size: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  .dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; flex-shrink: 0; }
+  .dot-rose { background: var(--rose-500); }
+  .dot-emerald { background: var(--emerald-500); }
+
+  /* ---------- Mobile D-pad ---------- */
+  .dpad-card { display: block; }
+  @media (min-width: 1024px) { .dpad-card { display: none; } }
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    max-width: 200px;
+    margin: 0 auto;
+  }
+  .dpad-btn {
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: var(--slate-100);
+    color: var(--slate-700);
+    border: none;
+    cursor: pointer;
+    transition: background-color .15s ease, transform .1s ease;
+    font-family: inherit;
+  }
+  .dpad-btn:hover { background: #d1fae5; }
+  .dpad-btn:active { transform: scale(0.95); }
+  @media (prefers-color-scheme: dark) {
+    .dpad-btn { background: var(--slate-800); color: #e2e8f0; }
+    .dpad-btn:hover { background: #064e3b; }
+  }
+  .dpad-empty { display: flex; align-items: center; justify-content: center; }
+  .dpad-center { width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: var(--slate-300); }
+  @media (prefers-color-scheme: dark) { .dpad-center { background: var(--slate-700); } }
+  .dpad-btn svg { width: 1.25rem; height: 1.25rem; }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    background: rgba(255,255,255,.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  @media (prefers-color-scheme: dark) {
+    .footer { background: rgba(2,6,23,.6); }
+  }
+  .footer-inner {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  @media (min-width: 640px) { .footer-inner { flex-direction: row; } }
+  .footer-left { display: flex; align-items: center; gap: 0.375rem; }
+  .footer-left svg { width: 0.875rem; height: 0.875rem; color: var(--emerald-500); }
+  .footer-sep {
+    width: 1px;
+    height: 0.75rem;
+    background: var(--slate-300);
+    display: none;
+  }
+  @media (min-width: 640px) { .footer-sep { display: block; } }
+
+  /* ---------- Responsive canvas sizing ---------- */
+  @media (max-width: 480px) {
+    .canvas-wrapper { padding: 0.375rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <main class="main">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div class="logo-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <line x1="6" y1="11" x2="10" y2="11"></line>
+            <line x1="8" y1="9" x2="8" y2="13"></line>
+            <line x1="15" y1="12" x2="15.01" y2="12"></line>
+            <line x1="18" y1="10" x2="18.01" y2="10"></line>
+            <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.419 2 14.456 2 16a3 3 0 0 0 9 0 3 3 0 0 0 9 0c0-1.545-.604-6.581-.685-7.258-.007-.05-.011-.1-.017-.152A4 4 0 0 0 17.32 5z"></path>
+          </svg>
+        </div>
+        <h1 class="title">贪吃蛇</h1>
+      </div>
+      <p class="subtitle">使用方向键 / WASD 控制蛇的移动 · 吃到食物得分 · 别撞墙也别撞到自己</p>
+    </div>
+
+    <div class="game-wrap">
+      <!-- Game Board -->
+      <div class="board-col">
+        <div class="board-relative">
+          <!-- Score badges -->
+          <div class="score-row">
+            <div class="chip">
+              <div class="chip-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                  <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"></path>
+                  <path d="M10 2c1 .5 2 2 2 5"></path>
+                </svg>
+              </div>
+              <div class="chip-body">
+                <div class="chip-label">分数</div>
+                <div class="chip-value" id="score">0</div>
+              </div>
+            </div>
+            <div class="chip">
+              <div class="chip-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+              </div>
+              <div class="chip-body">
+                <div class="chip-label">食物</div>
+                <div class="chip-value" id="food-count">0</div>
+              </div>
+            </div>
+            <div class="chip">
+              <div class="chip-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+              </div>
+              <div class="chip-body">
+                <div class="chip-label">最高分</div>
+                <div class="chip-value" id="high-score">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Canvas + overlays -->
+          <div class="canvas-wrapper">
+            <canvas id="game" width="440" height="440"></canvas>
+
+            <!-- Idle overlay -->
+            <div class="overlay" id="overlay-idle">
+              <div class="overlay-inner">
+                <p class="overlay-ready">准备好了吗？</p>
+                <p class="overlay-hint">按下「开始」或方向键即可启动</p>
+                <button class="btn btn-primary btn-lg" id="btn-start-idle">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                  开始游戏
+                </button>
+              </div>
+            </div>
+
+            <!-- Paused overlay -->
+            <div class="overlay" id="overlay-paused" style="display:none;">
+              <div class="overlay-inner">
+                <p class="overlay-ready">已暂停</p>
+                <button class="btn btn-primary btn-lg" id="btn-resume">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                  继续
+                </button>
+              </div>
+            </div>
+
+            <!-- Game over overlay -->
+            <div class="overlay" id="overlay-over" style="display:none;">
+              <div class="overlay-inner">
+                <p class="overlay-title">游戏结束</p>
+                <p class="overlay-sub">本局得分</p>
+                <p class="overlay-score" id="final-score">0</p>
+                <div class="record-badge" id="record-badge" style="display:none;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                    <path d="M4 22h16"></path>
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                  </svg>
+                  新纪录！
+                </div>
+                <div style="margin-top: 0.5rem;">
+                  <button class="btn btn-primary btn-lg" id="btn-restart-overlay">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                    </svg>
+                    再来一局
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control buttons -->
+        <div class="controls">
+          <button class="btn btn-primary btn-lg" id="btn-main">
+            <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+            <span id="btn-main-label">开始游戏</span>
+          </button>
+          <button class="btn btn-outline btn-lg" id="btn-restart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            重新开始
+          </button>
+        </div>
+      </div>
+
+      <!-- Side panel -->
+      <div class="side-panel">
+        <div class="card">
+          <div class="card-body">
+            <h2 class="card-title">
+              <span class="info-dot">i</span>
+              操作说明
+            </h2>
+            <ul class="instructions">
+              <li><kbd>↑ ↓ ← →</kbd> 控制方向</li>
+              <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 控制方向</li>
+              <li><kbd>空格</kbd> 暂停 / 继续</li>
+              <li><span class="dot dot-rose"></span> 吃红色食物得 10 分，蛇会变长</li>
+              <li><span class="dot dot-emerald"></span> 速度随分数提升而加快</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Mobile D-pad -->
+        <div class="card dpad-card">
+          <div class="card-body">
+            <h2 class="card-title" style="justify-content:center;">触屏控制</h2>
+            <div class="dpad">
+              <div></div>
+              <button class="dpad-btn" data-dir="UP" aria-label="上">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg>
+              </button>
+              <div></div>
+              <button class="dpad-btn" data-dir="LEFT" aria-label="左">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+              </button>
+              <div class="dpad-empty"><span class="dpad-center"></span></div>
+              <button class="dpad-btn" data-dir="RIGHT" aria-label="右">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+              </button>
+              <div></div>
+              <button class="dpad-btn" data-dir="DOWN" aria-label="下">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+              <div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="11" x2="10" y2="11"></line>
+          <line x1="8" y1="9" x2="8" y2="13"></line>
+          <line x1="15" y1="12" x2="15.01" y2="12"></line>
+          <line x1="18" y1="10" x2="18.01" y2="10"></line>
+          <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.419 2 14.456 2 16a3 3 0 0 0 9 0 3 3 0 0 0 9 0c0-1.545-.604-6.581-.685-7.258-.007-.05-.011-.1-.017-.152A4 4 0 0 0 17.32 5z"></path>
+        </svg>
+        贪吃蛇 · 经典街机小游戏
+      </span>
+      <span class="footer-sep"></span>
+      <span>纯 HTML + Canvas · 双击即可运行</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Game Configuration ----------
+  var GRID_SIZE = 20;
+  var CELL_SIZE = 22;
+  var BOARD_PX = GRID_SIZE * CELL_SIZE;
+  var INITIAL_SPEED = 140;
+  var MIN_SPEED = 70;
+  var SPEED_STEP = 6;
+
+  var DIR_VECTORS = {
+    UP: { x: 0, y: -1 },
+    DOWN: { x: 0, y: 1 },
+    LEFT: { x: -1, y: 0 },
+    RIGHT: { x: 1, y: 0 }
+  };
+  var OPPOSITE = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
+
+  var INITIAL_SNAKE = [
+    { x: 9, y: 10 },
+    { x: 8, y: 10 },
+    { x: 7, y: 10 }
+  ];
+
+  // ---------- DOM refs ----------
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var scoreEl = document.getElementById('score');
+  var foodCountEl = document.getElementById('food-count');
+  var highScoreEl = document.getElementById('high-score');
+  var finalScoreEl = document.getElementById('final-score');
+  var recordBadge = document.getElementById('record-badge');
+  var overlayIdle = document.getElementById('overlay-idle');
+  var overlayPaused = document.getElementById('overlay-paused');
+  var overlayOver = document.getElementById('overlay-over');
+  var btnStartIdle = document.getElementById('btn-start-idle');
+  var btnResume = document.getElementById('btn-resume');
+  var btnRestartOverlay = document.getElementById('btn-restart-overlay');
+  var btnMain = document.getElementById('btn-main');
+  var btnMainLabel = document.getElementById('btn-main-label');
+  var btnRestart = document.getElementById('btn-restart');
+
+  // ---------- Game state ----------
+  var snake = INITIAL_SNAKE.map(function (p) { return { x: p.x, y: p.y }; });
+  var food = { x: 14, y: 10 };
+  var dir = 'RIGHT';
+  var nextDir = 'RIGHT';
+  var speed = INITIAL_SPEED;
+  var loopTimer = null;
+  var status = 'idle'; // idle | running | paused | over
+  var score = 0;
+  var foodCount = 0;
+  var highScore = 0;
+
+  // Load high score from localStorage
+  try {
+    var stored = localStorage.getItem('snake-high-score');
+    if (stored) {
+      highScore = parseInt(stored, 10) || 0;
+      highScoreEl.textContent = highScore;
+    }
+  } catch (e) { /* localStorage may be unavailable (file:// privacy mode) */ }
+
+  // ---------- Helpers ----------
+  function randomFood(snakeArr) {
+    var occupied = {};
+    for (var i = 0; i < snakeArr.length; i++) {
+      occupied[snakeArr[i].x + ',' + snakeArr[i].y] = true;
+    }
+    var free = [];
+    for (var y = 0; y < GRID_SIZE; y++) {
+      for (var x = 0; x < GRID_SIZE; x++) {
+        if (!occupied[x + ',' + y]) free.push({ x: x, y: y });
+      }
+    }
+    if (free.length === 0) return { x: 0, y: 0 };
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  function isCollision(snakeArr, head) {
+    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+      return true;
+    }
+    for (var i = 0; i < snakeArr.length - 1; i++) {
+      if (snakeArr[i].x === head.x && snakeArr[i].y === head.y) return true;
+    }
+    return false;
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ---------- Drawing ----------
+  function draw() {
+    // Background board
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, BOARD_PX, BOARD_PX);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    ctx.lineWidth = 1;
+    for (var i = 1; i < GRID_SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL_SIZE, 0);
+      ctx.lineTo(i * CELL_SIZE, BOARD_PX);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * CELL_SIZE);
+      ctx.lineTo(BOARD_PX, i * CELL_SIZE);
+      ctx.stroke();
+    }
+
+    // Food (apple) with glow
+    var fx = food.x * CELL_SIZE + CELL_SIZE / 2;
+    var fy = food.y * CELL_SIZE + CELL_SIZE / 2;
+    var radius = CELL_SIZE / 2 - 3;
+
+    var glow = ctx.createRadialGradient(fx, fy, 2, fx, fy, radius + 6);
+    glow.addColorStop(0, 'rgba(244, 63, 94, 0.55)');
+    glow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(fx, fy, radius + 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    var appleGrad = ctx.createRadialGradient(fx - 3, fy - 3, 2, fx, fy, radius);
+    appleGrad.addColorStop(0, '#fb7185');
+    appleGrad.addColorStop(1, '#e11d48');
+    ctx.fillStyle = appleGrad;
+    ctx.beginPath();
+    ctx.arc(fx, fy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Leaf on apple
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.ellipse(fx + 3, fy - radius + 1, 3, 1.8, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Snake
+    for (var idx = 0; idx < snake.length; idx++) {
+      var seg = snake[idx];
+      var isHead = idx === 0;
+      var x = seg.x * CELL_SIZE;
+      var y = seg.y * CELL_SIZE;
+      var pad = 1.5;
+
+      if (isHead) {
+        var headGrad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
+        headGrad.addColorStop(0, '#34d399');
+        headGrad.addColorStop(1, '#059669');
+        ctx.fillStyle = headGrad;
+        roundRect(x + pad, y + pad, CELL_SIZE - pad * 2, CELL_SIZE - pad * 2, 6);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#0f172a';
+        var eyeOffset = 5;
+        var eyeR = 2.2;
+        var dvec = DIR_VECTORS[dir];
+        var cx = x + CELL_SIZE / 2;
+        var cy = y + CELL_SIZE / 2;
+        var e1x, e1y, e2x, e2y;
+        if (dvec.x !== 0) {
+          e1x = cx + dvec.x * eyeOffset; e1y = cy - 3;
+          e2x = cx + dvec.x * eyeOffset; e2y = cy + 3;
+        } else {
+          e1x = cx - 3; e1y = cy + dvec.y * eyeOffset;
+          e2x = cx + 3; e2y = cy + dvec.y * eyeOffset;
+        }
+        ctx.beginPath();
+        ctx.arc(e1x, e1y, eyeR, 0, Math.PI * 2);
+        ctx.arc(e2x, e2y, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        var ratio = idx / snake.length;
+        var r = Math.round(16 + (20 - 16) * ratio);
+        var g = Math.round(185 - 185 * ratio * 0.4);
+        var b = Math.round(129 + (120 - 129) * ratio);
+        ctx.fillStyle = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+        roundRect(x + pad, y + pad, CELL_SIZE - pad * 2, CELL_SIZE - pad * 2, 5);
+        ctx.fill();
+      }
+    }
+  }
+
+  // ---------- Overlay / button UI ----------
+  function showOverlay(name) {
+    overlayIdle.style.display = name === 'idle' ? 'flex' : 'none';
+    overlayPaused.style.display = name === 'paused' ? 'flex' : 'none';
+    overlayOver.style.display = name === 'over' ? 'flex' : 'none';
+  }
+
+  function updateMainButton() {
+    if (status === 'running') {
+      btnMain.classList.remove('btn-primary');
+      btnMain.classList.add('btn-secondary');
+      btnMainLabel.textContent = '暂停';
+      btnMain.querySelector('svg').outerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+    } else {
+      btnMain.classList.add('btn-primary');
+      btnMain.classList.remove('btn-secondary');
+      btnMainLabel.textContent = status === 'paused' ? '重新开始' : (status === 'over' ? '再玩一次' : '开始游戏');
+      btnMain.querySelector('svg').outerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>';
+    }
+  }
+
+  // ---------- Game control ----------
+  function gameOver() {
+    if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+    status = 'over';
+    var isNewRecord = score > highScore && score > 0;
+    if (isNewRecord) {
+      highScore = score;
+      try { localStorage.setItem('snake-high-score', String(highScore)); } catch (e) {}
+      highScoreEl.textContent = highScore;
+    }
+    finalScoreEl.textContent = score;
+    recordBadge.style.display = isNewRecord ? 'inline-flex' : 'none';
+    showOverlay('over');
+    updateMainButton();
+  }
+
+  function tick() {
+    var dvec = DIR_VECTORS[nextDir];
+    dir = nextDir;
+
+    var head = snake[0];
+    var newHead = { x: head.x + dvec.x, y: head.y + dvec.y };
+
+    var ateFood = newHead.x === food.x && newHead.y === food.y;
+
+    var newSnake;
+    if (isCollision(snake, newHead)) {
+      gameOver();
+      return;
+    } else if (ateFood) {
+      newSnake = [newHead].concat(snake);
+    } else {
+      newSnake = [newHead].concat(snake.slice(0, -1));
+    }
+    snake = newSnake;
+
+    if (ateFood) {
+      score += 10;
+      foodCount += 1;
+      scoreEl.textContent = score;
+      foodCountEl.textContent = foodCount;
+      food = randomFood(snake);
+      speed = Math.max(MIN_SPEED, INITIAL_SPEED - SPEED_STEP * (score / 10));
+    }
+
+    draw();
+    scheduleNext();
+  }
+
+  function scheduleNext() {
+    if (loopTimer) clearTimeout(loopTimer);
+    loopTimer = setTimeout(function () {
+      if (status === 'running') tick();
+    }, speed);
+  }
+
+  function startGame() {
+    snake = INITIAL_SNAKE.map(function (p) { return { x: p.x, y: p.y }; });
+    food = randomFood(snake);
+    dir = 'RIGHT';
+    nextDir = 'RIGHT';
+    speed = INITIAL_SPEED;
+    score = 0;
+    foodCount = 0;
+    scoreEl.textContent = '0';
+    foodCountEl.textContent = '0';
+    status = 'running';
+    showOverlay(null);
+    updateMainButton();
+    draw();
+    scheduleNext();
+  }
+
+  function pauseGame() {
+    if (status !== 'running') return;
+    if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+    status = 'paused';
+    showOverlay('paused');
+    updateMainButton();
+  }
+
+  function resumeGame() {
+    if (status !== 'paused') return;
+    status = 'running';
+    showOverlay(null);
+    updateMainButton();
+    scheduleNext();
+  }
+
+  function handleDirPress(d) {
+    if (OPPOSITE[dir] === d) return;
+    nextDir = d;
+    if (status === 'idle' || status === 'over') {
+      startGame();
+      nextDir = d;
+    } else if (status === 'paused') {
+      resumeGame();
+      nextDir = d;
+    }
+  }
+
+  // ---------- Event listeners ----------
+  btnStartIdle.addEventListener('click', startGame);
+  btnResume.addEventListener('click', resumeGame);
+  btnRestartOverlay.addEventListener('click', startGame);
+  btnRestart.addEventListener('click', startGame);
+  btnMain.addEventListener('click', function () {
+    if (status === 'running') pauseGame();
+    else if (status === 'paused') startGame();
+    else startGame(); // idle or over
+  });
+
+  // Keyboard
+  var KEY_MAP = {
+    ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
+    w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
+    W: 'UP', S: 'DOWN', A: 'LEFT', D: 'RIGHT'
+  };
+  window.addEventListener('keydown', function (e) {
+    var d = KEY_MAP[e.key];
+    if (d) {
+      e.preventDefault();
+      handleDirPress(d);
+      return;
+    }
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      if (status === 'running') pauseGame();
+      else if (status === 'paused') resumeGame();
+    }
+  });
+
+  // D-pad buttons
+  var dpadButtons = document.querySelectorAll('.dpad-btn');
+  for (var i = 0; i < dpadButtons.length; i++) {
+    (function (btn) {
+      btn.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        handleDirPress(btn.getAttribute('data-dir'));
+      });
+    })(dpadButtons[i]);
+  }
+
+  // ---------- Init ----------
+  draw();
+  updateMainButton();
+})();
+</script>
+</body>
+</html>
