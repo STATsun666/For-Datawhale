@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#04060f" />
+    <title>霓虹星际战机 | NEON STARFIGHTER</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <main class="frame">
+      <header class="hud">
+        <div class="hud-main">
+          <div class="stat">
+            <span class="label">得分</span>
+            <strong class="value" id="score">0</strong>
+          </div>
+          <div class="stat center">
+            <div class="lives" id="lives" aria-label="剩余生命"></div>
+            <span class="time" id="time">00:00</span>
+          </div>
+          <div class="stat right">
+            <span class="label">波次</span>
+            <strong class="value" id="wave">1</strong>
+          </div>
+        </div>
+        <div class="hud-sub">
+          <div class="wave-track" aria-label="当前波次进度">
+            <i id="waveBar"></i>
+          </div>
+          <label class="auto">
+            <input type="checkbox" id="autoFire" checked />
+            <span>自动连发</span>
+          </label>
+        </div>
+        <div class="hud-buff" id="buff" aria-hidden="true">
+          <span class="buff-name">三向散弹</span>
+          <div class="buff-track"><i id="buffFill"></i></div>
+          <span class="buff-time" id="buffTime">8.0s</span>
+        </div>
+      </header>
+
+      <div class="screen">
+        <canvas id="game" width="480" height="800" aria-label="游戏画面"></canvas>
+
+        <button class="sound-btn" id="soundBtn" type="button" aria-pressed="false" aria-label="关闭音效">
+          <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" />
+            <path d="M17 8.5a5 5 0 0 1 0 7" />
+          </svg>
+          <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" />
+            <line x1="17" y1="9" x2="22" y2="15" />
+            <line x1="22" y1="9" x2="17" y2="15" />
+          </svg>
+        </button>
+
+        <section class="overlay" id="startScreen">
+          <p class="eyebrow">NEON STARFIGHTER</p>
+          <h1 class="title">霓虹星际战机</h1>
+          <p class="tagline">穿越霓虹星域，击落所有来犯敌机</p>
+          <ul class="keys">
+            <li>
+              <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+              <span class="key-sep">/</span>
+              <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span>
+              <span class="key-desc">移动战机</span>
+            </li>
+            <li>
+              <span class="key wide">空格</span>
+              <span class="key-desc">发射激光</span>
+            </li>
+            <li>
+              <span class="key">P</span><span class="key">Esc</span>
+              <span class="key-desc">暂停 / 继续</span>
+            </li>
+            <li class="muted">自动连发默认开启 · 音效可在右上角关闭</li>
+          </ul>
+          <p class="best-line">最高分 <strong id="startBest">0</strong></p>
+          <button class="btn" id="startBtn" type="button">开始游戏</button>
+          <p class="hint">按 Enter 也可开始</p>
+        </section>
+
+        <section class="overlay hidden" id="overScreen">
+          <p class="eyebrow danger">SIGNAL LOST</p>
+          <h2 class="title small">战机损毁</h2>
+          <div class="result">
+            <div class="result-item">
+              <span class="label">最终得分</span>
+              <strong class="result-value" id="finalScore">0</strong>
+            </div>
+            <div class="divider"></div>
+            <div class="result-item">
+              <span class="label">击毁敌机</span>
+              <strong class="result-value" id="finalKills">0</strong>
+            </div>
+          </div>
+          <p class="best-line">
+            最高分 <strong id="finalBest">0</strong>
+            <em class="record hidden" id="newRecord">新纪录</em>
+          </p>
+          <button class="btn" id="retryBtn" type="button">再来一局</button>
+          <p class="hint">按 Enter 快速重开</p>
+        </section>
+
+        <section class="overlay pause hidden" id="pauseScreen">
+          <p class="eyebrow">PAUSED</p>
+          <h2 class="title small">暂停中</h2>
+          <p class="tagline">按 P / Esc 继续战斗</p>
+          <button class="btn" id="resumeBtn" type="button">继续游戏</button>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
